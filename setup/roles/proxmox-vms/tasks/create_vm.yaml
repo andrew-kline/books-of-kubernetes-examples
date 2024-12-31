@@ -1,0 +1,109 @@
+---
+- name: List all VMs 
+  community.general.proxmox_vm_info:
+    api_host: "{{ ansible_host }}"
+    api_user: "{{ api_user }}"
+    api_token_id: "{{ proxmox_token_id }}"
+    api_token_secret: "{{ proxmox_token_secret }}"
+    node: "{{ node_name }}"
+  register: vm_list_response
+
+- name: Extract existing VM IDs
+  set_fact:
+    existing_vm_ids: "{{ vm_list_response.proxmox_vms | map(attribute='vmid') | list }}"
+    possible_ids: "{{ range(base_vm_id, 1000, vm_id_increment) }}"
+
+- name: Find available VM IDs 
+  set_fact:
+    available_ids: "{{ (available_ids|default([])) + [item] }}"
+  with_items: "{{ possible_ids }}"
+  when: item not in existing_vm_ids
+
+- name: Find the next available VM ID
+  set_fact:
+    next_vm_id: "{{ available_ids | first | default(base_vm_id) }}"
+
+- name: Print next ID 
+  ansible.builtin.debug:
+    msg: "{{ next_vm_id }}"
+
+- name: Create new VM
+  community.general.proxmox_kvm:
+    api_host: "{{ ansible_host }}"
+    api_user: "{{ api_user }}"
+    api_token_id: "{{ proxmox_token_id }}"
+    api_token_secret: "{{ proxmox_token_secret }}"
+    node: "{{ node_name }}"
+    newid: "{{ next_vm_id | int}}"
+    vmid: "{{ template_id }}"
+    clone: "{{ clone_name }}"
+    full: "{{ full_copy }}"
+    name: "{{ item.key }}"
+  with_dict: "{{ vms }}"
+
+- name: Configure VM
+  community.general.proxmox_kvm:
+    api_host: "{{ ansible_host }}"
+    api_user: "{{ api_user }}"
+    api_token_id: "{{ proxmox_token_id }}"
+    api_token_secret: "{{ proxmox_token_secret }}"
+    node: "{{ node_name }}"
+    name: "{{ item.key }}"
+    update: true
+    cores: "{{ cores }}"
+    memory: "{{ memory }}"
+    tags:
+      - bookofk8s
+      - "{{ item.value.type }}"
+
+    agent: true
+  retries: 3
+  delay: 10
+  with_dict: "{{ vms }}"
+
+
+- name: Start VM
+  community.general.proxmox_kvm:
+    api_host: "{{ ansible_host }}"
+    api_user: "{{ api_user }}"
+    api_token_id: "{{ proxmox_token_id }}"
+    api_token_secret: "{{ proxmox_token_secret }}"
+    node: "{{ node_name }}"
+    name: "{{ item.key }}"
+    state: started
+  with_dict: "{{ vms }}"
+
+- name: Extract new VM
+  community.general.proxmox_vm_info:
+    api_host: "{{ ansible_host }}"
+    api_user: "{{ api_user }}"
+    api_token_id: "{{ proxmox_token_id }}"
+    api_token_secret: "{{ proxmox_token_secret }}"
+    node: "{{ node_name }}"
+    name: "{{ item.key }}"
+    network: true
+    config: current
+  retries: 3
+  delay: 10
+  register: new_vm
+  with_dict: "{{ vms }}"
+
+# TODO: i've hardcoded the 192.168.4 here, should be different to accommodate other users
+- name: Extract new VM IP address
+  set_fact:
+    vm_ip: >-
+      {{
+        new_vm.results[0].proxmox_vms[0].network 
+        | json_query('[*]."ip-addresses"[?starts_with("ip-address",`192.168.4.`)]."ip-address"')
+        | flatten 
+        | first
+      }}
+  retries: 3
+  delay: 10
+
+- name: Add new VM to inventory
+  add_host:
+    hostname: "{{ vm_ip }}"
+    groups: vms
+    ansible_ssh_user: "{{ ansible_ssh_user }}"
+

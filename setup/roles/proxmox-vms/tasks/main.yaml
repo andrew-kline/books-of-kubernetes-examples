@@ -1,0 +1,12 @@
+---
+- ansible.builtin.include_tasks: create_vm.yaml
+  when: not proxmox_k8s_teardown and not proxmox_vms_manage
+
+- ansible.builtin.include_tasks: manage_vm.yaml
+  when: not proxmox_k8s_teardown and proxmox_vms_manage
+
+- ansible.builtin.include_tasks: teardown.yaml
+  when: proxmox_k8s_teardown
+
+- ansible.builtin.include_tasks: delete.yaml
+  when: proxmox_k8s_teardown and proxmox_k8s_delete

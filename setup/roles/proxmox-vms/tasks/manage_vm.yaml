@@ -1,0 +1,11 @@
+---
+- name: Set hostname
+  ansible.builtin.hostname:
+    name: "{{ item.key }}"
+  with_dict: "{{ vms }}"
+
+- name: Update and upgrade
+  apt:
+    upgrade: yes
+    update_cache: yes
+  with_dict: "{{ vms }}"

@@ -1,0 +1,19 @@
+---
+proxmox_k8s_teardown: false
+proxmox_k8s_delete: false
+proxmox_vms_manage: false
+api_host: "{{ lookup('ansible.builtin.env','PROXMOX_IP') }}"
+api_user: "{{ lookup('ansible.builtin.env','PROXMOX_USER') }}"
+proxmox_token_id: "{{ lookup('ansible.builtin.env','PROXMOX_TOKEN_ID') }}"
+proxmox_token_secret: "{{ lookup('ansible.builtin.env','PROXMOX_TOKEN_SECRET') }}"
+ansible_ssh_user: "{{ lookup('ansible.builtin.env','ANSIBLE_SSH_USER') }}"
+node_name: "{{ lookup('ansible.builtin.env','PROXMOX_NODE', default='proxmox') }}"
+
+base_vm_id: 300
+vm_id_increment: 10
+template_id: 500   # ID of the template to clone
+storage_size: 8
+memory: 2048
+cores: 2
+clone_name: ubuntu-server # arbitrary name for the clone since using vmid
+full_copy: true

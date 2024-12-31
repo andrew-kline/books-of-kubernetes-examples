@@ -1,0 +1,25 @@
+remote:
+  hosts:
+    proxmox
+
+masters:
+  children:
+    tag_type_master:
+
+nodes:
+  children:
+    tag_type_master:
+
+clients:
+  children:
+    tag_type_client:
+
+servers:
+  children:
+    tag_type_server:
+
+tag_type_master:
+
+tag_type_client:
+
+tag_type_server:

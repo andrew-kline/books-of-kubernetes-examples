@@ -1,0 +1,19 @@
+---
+plugin: community.general.proxmox
+validate_certs: false
+url: "{{ lookup('ansible.builtin.env','PROXMOX_URL') }}"
+user: "{{ lookup('ansible.builtin.env','PROXMOX_USER')}}" # should be something like 'name@pam'
+token_id: "{{ lookup('ansible.builtin.env','PROXMOX_TOKEN_ID') }}"
+token_secret: "{{ lookup('ansible.builtin.env','PROXMOX_TOKEN_SECRET') }}"
+ansible_python_interpreter: /usr/bin/python3
+want_facts: true
+keyed_groups:
+    # proxmox_tags_parsed is an example of a fact only returned when 'want_facts=true'
+  - key: proxmox_tags_parsed
+    separator: ""
+    prefix: group
+filters:
+  - "'bookofk8s' in (proxmox_tags_parsed|list)"
+groups:
+  nodeservers: "'node' in (proxmox_tags_parsed|list)"
+  masterservers: "'master' in (proxmox_tags_parsed|list)"

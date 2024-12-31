@@ -1,0 +1,22 @@
+---
+- name: Create new VM
+  hosts: proxmox
+  vars:
+    vms:
+      BOK-example1:
+        type: master
+  roles:
+    - proxmox-vms
+
+- name: Manage new VM
+  hosts: vms
+  become: true
+  become_user: root
+  become_method: sudo
+  vars:
+    proxmox_vms_manage: true
+    vms:
+      BOK-example1:
+        type: master
+  roles:
+    - proxmox-vms

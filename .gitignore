@@ -3,3 +3,4 @@ sshkeys/
 aws-ssh.sh
 .vagrant/
 *.log
+*.env
